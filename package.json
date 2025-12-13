@@ -9,7 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
+    "@prisma/config": "^7.1.0",
+    "dotenv": "^17.2.3",
     "next": "16.0.10",
+    "next-auth": "^4.24.13",
+    "pg": "^8.16.3",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
@@ -20,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "prisma": "^7.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
