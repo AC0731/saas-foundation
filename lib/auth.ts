@@ -6,15 +6,8 @@ import { db } from "./db";
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/api/auth/signin",
-  },
-  callbacks: {
-    // This forces the user to the dashboard after a successful login
-    async redirect({ url, baseUrl }) {
-      return baseUrl + "/dashboard";
-    },
-  },
+  // TEMPORARILY comment out custom pages to use defaults
+  // pages: { signIn: "/api/auth/signin" }, 
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -24,12 +17,9 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email) return null;
-        return {
-          id: "1",
-          name: "SaaS User",
-          email: credentials.email,
-        };
+        return { id: "1", name: "User", email: credentials.email };
       }
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
 };

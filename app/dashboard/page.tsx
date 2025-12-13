@@ -6,7 +6,8 @@ import { createNote } from "../../lib/actions";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/api/auth/signin");
+  if (!session) redirect("/api/auth/signin?callbackUrl=/dashboard");
+
 
   const notes = await db.note.findMany({
     where: { user: { email: session.user?.email! } },
@@ -18,7 +19,7 @@ export default async function Dashboard() {
       <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
       <p className="text-green-600 mb-8">Logged in as: {session.user?.email}</p>
       
-      <form action={createNote} className="flex flex-col gap-4 mb-10 p-6 border rounded-lg bg-white shadow-sm">
+      <form action={createNote} className="flex flex-col gap-4">
         <h2 className="font-bold text-lg">New Note</h2>
         <input name="title" placeholder="Title" required className="p-2 border rounded text-black" />
         <textarea name="content" placeholder="Content" className="p-2 border rounded text-black h-24" />
