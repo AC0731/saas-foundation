@@ -15,26 +15,52 @@ export default async function Dashboard() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto p-10 font-sans">
-      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-      <p className="text-green-600 mb-8">Logged in as: {session.user?.email}</p>
+  <div className="min-h-screen bg-slate-50 p-10 font-sans text-slate-900">
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-4xl font-extrabold text-indigo-600 mb-2">SaaS Dashboard</h1>
+      <p className="text-emerald-600 font-medium mb-8 bg-emerald-50 px-3 py-1 rounded-full w-fit">
+        ● Logged in as: {session.user?.email}
+      </p>
       
-      <form action={createNote} className="flex flex-col gap-4">
-        <h2 className="font-bold text-lg">New Note</h2>
-        <input name="title" placeholder="Title" required className="p-2 border rounded text-black" />
-        <textarea name="content" placeholder="Content" className="p-2 border rounded text-black h-24" />
-        <button type="submit" className="bg-black text-white p-2 rounded hover:bg-gray-800">Save Note</button>
+      {/* Colorful Form Container */}
+      <form action={createNote} className="flex flex-col gap-4 mb-10 p-8 border-none rounded-2xl bg-white shadow-xl shadow-indigo-100">
+        <h2 className="font-bold text-xl text-slate-800">New Note</h2>
+        <input 
+          name="title" 
+          placeholder="Title" 
+          required 
+          className="p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+        />
+        <textarea 
+          name="content" 
+          placeholder="What's on your mind?" 
+          className="p-3 border border-slate-200 rounded-xl h-32 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+        />
+        <button 
+          type="submit" 
+          className="bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 hover:shadow-lg transition-all active:scale-95"
+        >
+          Save to Cloud
+        </button>
       </form>
 
-      <div className="space-y-4">
-        <h2 className="font-bold text-lg">Your Notes</h2>
-        {notes.map((note) => (
-          <div key={note.id} className="p-4 border rounded bg-gray-50">
-            <h3 className="font-bold">{note.title}</h3>
-            <p className="text-gray-600 text-sm">{note.content}</p>
+      {/* Colorful Notes List */}
+      <div className="space-y-6">
+        <h2 className="font-bold text-2xl text-slate-800 border-b border-slate-200 pb-2">Your Notes</h2>
+        {notes.length === 0 ? (
+          <div className="text-slate-400 text-center py-10 bg-slate-100 rounded-xl border-2 border-dashed border-slate-200">
+            No notes found yet. Start typing above!
           </div>
-        ))}
+        ) : (
+          notes.map((note) => (
+            <div key={note.id} className="p-6 border-l-4 border-indigo-500 rounded-r-xl bg-white shadow-md hover:shadow-indigo-100 transition-shadow">
+              <h3 className="font-bold text-lg text-slate-900">{note.title}</h3>
+              <p className="text-slate-600 mt-2 leading-relaxed">{note.content}</p>
+            </div>
+          ))
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }
