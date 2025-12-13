@@ -64,4 +64,4 @@ model Note {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
-
+git push origin ui-redesign
