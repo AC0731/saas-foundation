@@ -1,13 +1,12 @@
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "next-auth";
 import { authOptions } from "../../lib/auth";
 import { db } from "../../lib/db";
 import { redirect } from "next/navigation";
-import { createNote } from "../../lib/actions";
+import { createNote, deleteNote } from "../../lib/actions";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/api/auth/signin?callbackUrl=/dashboard");
-
+  if (!session) redirect("/api/auth/signin");
 
   const notes = await db.note.findMany({
     where: { user: { email: session.user?.email! } },
@@ -15,52 +14,39 @@ export default async function Dashboard() {
   });
 
   return (
-  <div className="min-h-screen bg-slate-50 p-10 font-sans text-slate-900">
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-4xl font-extrabold text-indigo-600 mb-2">SaaS Dashboard</h1>
-      <p className="text-emerald-600 font-medium mb-8 bg-emerald-50 px-3 py-1 rounded-full w-fit">
-        ● Logged in as: {session.user?.email}
-      </p>
+    <div className="max-w-4xl mx-auto p-6 md:p-10">
+      <h1 className="text-3xl font-bold text-slate-900 mb-8">Workspace</h1>
       
-      {/* Colorful Form Container */}
-      <form action={createNote} className="flex flex-col gap-4 mb-10 p-8 border-none rounded-2xl bg-white shadow-xl shadow-indigo-100">
-        <h2 className="font-bold text-xl text-slate-800">New Note</h2>
-        <input 
-          name="title" 
-          placeholder="Title" 
-          required 
-          className="p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
-        />
-        <textarea 
-          name="content" 
-          placeholder="What's on your mind?" 
-          className="p-3 border border-slate-200 rounded-xl h-32 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
-        />
-        <button 
-          type="submit" 
-          className="bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 hover:shadow-lg transition-all active:scale-95"
-        >
-          Save to Cloud
-        </button>
-      </form>
+      <div className="grid md:grid-cols-3 gap-8">
+        <section className="md:col-span-1">
+          <form action={createNote} className="bg-white p-6 rounded-xl border shadow-sm flex flex-col gap-3">
+            <h2 className="font-bold text-slate-800">New Entry</h2>
+            <input name="title" placeholder="Title" required className="p-2 border rounded-lg text-black text-sm" />
+            <textarea name="content" placeholder="Content" className="p-2 border rounded-lg text-black text-sm h-24" />
+            <button type="submit" className="bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700">
+              Save Note
+            </button>
+          </form>
+        </section>
 
-      {/* Colorful Notes List */}
-      <div className="space-y-6">
-        <h2 className="font-bold text-2xl text-slate-800 border-b border-slate-200 pb-2">Your Notes</h2>
-        {notes.length === 0 ? (
-          <div className="text-slate-400 text-center py-10 bg-slate-100 rounded-xl border-2 border-dashed border-slate-200">
-            No notes found yet. Start typing above!
-          </div>
-        ) : (
-          notes.map((note) => (
-            <div key={note.id} className="p-6 border-l-4 border-indigo-500 rounded-r-xl bg-white shadow-md hover:shadow-indigo-100 transition-shadow">
-              <h3 className="font-bold text-lg text-slate-900">{note.title}</h3>
-              <p className="text-slate-600 mt-2 leading-relaxed">{note.content}</p>
+        <section className="md:col-span-2 space-y-4">
+          <h2 className="font-bold text-slate-800">Your Library</h2>
+          {notes.map((note) => (
+            <div key={note.id} className="p-5 bg-white border rounded-xl shadow-sm flex justify-between items-start">
+              <div>
+                <h3 className="font-bold text-slate-900">{note.title}</h3>
+                <p className="text-slate-600 text-sm mt-1">{note.content}</p>
+              </div>
+              <form action={deleteNote}>
+                <input type="hidden" name="noteId" value={note.id} />
+                <button type="submit" className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+                  Delete
+                </button>
+              </form>
             </div>
-          ))
-        )}
+          ))}
+        </section>
       </div>
     </div>
-  </div>
-);
+  );
 }

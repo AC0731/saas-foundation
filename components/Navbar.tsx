@@ -35,7 +35,7 @@ export default function Navbar() {
         ) : (
           <button
             onClick={() => signIn()}
-            className="text-sm font-semibold text-white bg-blue-600 px-5 py-2 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
+            className="text-sm font-semibold text-white bg-blue-600 px-5 py-2 rounded-lg hover:bg-blue-700 transition-all"
           >
             Sign In
           </button>
