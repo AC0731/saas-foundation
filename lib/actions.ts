@@ -7,12 +7,15 @@ import { revalidatePath } from "next/cache";
 
 export async function createNote(formData: FormData) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) throw new Error("Unauthorized");
+  
+  if (!session?.user?.email) {
+    throw new Error("Unauthorized");
+  }
 
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
 
-  // Save to Neon
+  // Save the note to Neon and link it to the user
   await db.note.create({
     data: {
       title,
@@ -21,5 +24,6 @@ export async function createNote(formData: FormData) {
     },
   });
 
+  // This forces the dashboard to refresh and show the new note
   revalidatePath("/dashboard");
 }
