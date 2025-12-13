@@ -24,7 +24,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Add suppressHydrationWarning here
     <html lang="en" suppressHydrationWarning>
       <body 
       suppressContentEditableWarning 
