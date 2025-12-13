@@ -1,11 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  /* Main Background: Soft light grey-blue */
   --background: #f8fafc; 
-  /* Main Text: Dark slate blue */
   --foreground: #0f172a;
-  /* Primary Action Color: Professional Blue */
   --primary: #2563eb;
 }
 
@@ -17,10 +14,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Force standard light mode for now to ensure your new colors show */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, sans-serif;
-  min-height: 100vh;
 }
