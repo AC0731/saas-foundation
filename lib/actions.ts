@@ -23,7 +23,25 @@ export async function createNote(formData: FormData) {
       user: { connect: { email: session.user.email } }
     },
   });
+  
 
   // This forces the dashboard to refresh and show the new note
+  revalidatePath("/dashboard");
+}
+
+export async function deleteNote(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) throw new Error("Unauthorized");
+
+  const noteId = formData.get("noteId") as string;
+
+  // Security: Only delete the note if it belongs to the logged-in user
+  await db.note.delete({
+    where: {
+      id: noteId,
+      user: { email: session.user.email }
+    },
+  });
+
   revalidatePath("/dashboard");
 }
