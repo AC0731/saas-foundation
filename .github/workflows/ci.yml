@@ -40,5 +40,8 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Run tests
+        run: npm test
+
       - name: Build project
         run: npm run build
