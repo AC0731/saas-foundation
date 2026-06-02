@@ -2,6 +2,7 @@ import DeleteButton from "@/components/DeleteButton";
 import NoteForm from "@/components/NoteForm";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { createCheckoutSession } from "@/lib/stripe";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -22,6 +23,18 @@ export default async function Dashboard() {
     },
   });
 
+  const user = await db.user.findUnique({
+    where: {
+      email,
+    },
+    select: {
+      isPro: true,
+      stripeCurrentPeriodEnd: true,
+    },
+  });
+
+  const isPro = user?.isPro ?? false;
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
       <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -41,6 +54,41 @@ export default async function Dashboard() {
             Signed in as{" "}
             <span className="font-semibold text-slate-900">{email}</span>
           </div>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-medium text-blue-600">Subscription</p>
+            <h2 className="mt-1 text-xl font-bold text-slate-950">
+              {isPro ? "Pro workspace active" : "Free workspace"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {isPro
+                ? `Your Pro access is active${
+                    user?.stripeCurrentPeriodEnd
+                      ? ` until ${user.stripeCurrentPeriodEnd.toLocaleDateString()}`
+                      : ""
+                  }.`
+                : "Upgrade to unlock the Pro billing flow and test subscription lifecycle handling."}
+            </p>
+          </div>
+
+          {isPro ? (
+            <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">
+              Pro Active
+            </span>
+          ) : (
+            <form action={createCheckoutSession}>
+              <button
+                type="submit"
+                className="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Upgrade to Pro
+              </button>
+            </form>
+          )}
         </div>
       </div>
 
