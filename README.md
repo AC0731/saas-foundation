@@ -1,36 +1,225 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# SaaS Foundation
 
-## Getting Started
+A production-minded SaaS starter built with Next.js, TypeScript, Prisma, PostgreSQL, NextAuth, and Stripe.
 
-First, run the development server:
+This project demonstrates the core building blocks of a modern subscription-based SaaS application: authentication, protected workspaces, database-backed user data, billing, webhooks, subscription status handling, rate limiting, automated tests, CI checks, and polished application states.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Project Purpose
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+SaaS Foundation was built as a portfolio project to demonstrate practical full-stack product engineering.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The goal is not only to show that the app works, but also to show professional development habits:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- clean feature branches
+- focused pull requests
+- automated tests
+- CI validation
+- typed business logic
+- safe environment variable handling
+- protected server actions
+- subscription lifecycle handling
+- production-style user experience
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+### Authentication
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Custom sign-in and create-account page
+- Separate Sign In and Create Account modes
+- Credentials-based authentication with NextAuth
+- Password hashing with bcrypt
+- Protected dashboard route
+- Prevents accidental account creation during sign-in
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Workspace Dashboard
 
-## Deploy on Vercel
+- Authenticated user dashboard
+- Database-backed workspace notes
+- Create and delete notes
+- Ownership protection for note deletion
+- Empty-state UI for new users
+- Free vs Pro note limits
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Billing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Stripe Checkout subscription flow
+- Stripe Customer Portal access
+- Stripe webhook route
+- Checkout-session sync after successful Stripe redirect
+- Subscription created, updated, and deleted event handling
+- Cancellation status tracking
+- Pro status display on the dashboard
+
+### Abuse Protection
+
+- Database-backed rate limiting
+- Rate limits for sign in
+- Rate limits for create account
+- Rate limits for note creation
+- Rate limits for note deletion
+- Rate limits for Stripe checkout
+- Rate limits for Stripe billing portal access
+
+### User Experience
+
+- Custom loading page
+- Dashboard loading state
+- Custom error page
+- Custom not-found page
+- Custom delete confirmation modal
+- Toast notifications for user actions
+
+### Engineering Quality
+
+- TypeScript
+- Prisma schema validation
+- Automated tests with Vitest
+- GitHub Actions CI workflow
+- Production build checks
+- Environment example file
+- Server-only Prisma client protection
+
+## Tech Stack
+
+- Next.js
+- React
+- TypeScript
+- Prisma
+- PostgreSQL
+- NextAuth
+- Stripe
+- Tailwind CSS
+- Vitest
+- GitHub Actions
+- Vercel-ready architecture
+
+## Scripts
+
+    npm run dev
+    npm run build
+    npm run start
+    npm run lint
+    npm test
+
+## Environment Variables
+
+Create a local `.env` file using `.env.example` as a template.
+
+Required variables:
+
+    DATABASE_URL=
+    NEXTAUTH_URL=
+    NEXTAUTH_SECRET=
+    STRIPE_SECRET_KEY=
+    STRIPE_WEBHOOK_SECRET=
+    STRIPE_PRICE_ID=
+
+Never commit your real `.env` file.
+
+## Run Locally
+
+Install dependencies:
+
+    npm install
+
+Generate Prisma client:
+
+    npx prisma generate
+
+Push schema to the database:
+
+    npx prisma db push
+
+Start the development server:
+
+    npm run dev
+
+Open:
+
+    http://localhost:3000
+
+## Stripe Local Webhook Testing
+
+Start the app:
+
+    npm run dev
+
+In a second terminal, forward Stripe webhook events:
+
+    stripe listen --forward-to localhost:3000/api/webhook/stripe
+
+Copy the generated `whsec_...` value into:
+
+    STRIPE_WEBHOOK_SECRET=
+
+Restart the dev server after changing environment variables.
+
+## Testing
+
+Run automated tests:
+
+    npm test
+
+Run Prisma validation:
+
+    npx prisma validate
+
+Run production build:
+
+    npm run build
+
+## CI
+
+This project includes a GitHub Actions workflow that runs on pull requests and pushes to `master`.
+
+The workflow checks:
+
+- dependency installation
+- Prisma schema validation
+- Prisma client generation
+- automated tests
+- production build
+
+## Screenshots
+
+Screenshots are stored in the `screenshots` folder.
+
+Recommended screenshot set:
+
+- Landing page
+- Sign In / Create Account page
+- Free dashboard
+- Pro dashboard with billing section
+- Delete confirmation modal
+- Stripe Customer Portal
+
+## Current Status
+
+Completed:
+
+- Authentication
+- Protected dashboard
+- Database-backed notes
+- Stripe Checkout
+- Stripe Customer Portal
+- Stripe webhooks
+- Subscription cancellation tracking
+- Rate limiting
+- Automated tests
+- CI workflow
+- Loading/error/not-found pages
+- Custom delete confirmation modal
+
+Planned improvements:
+
+- Password reset flow
+- Email verification flow
+- More test coverage for auth and server actions
+- Audit logging
+- Admin dashboard
+- Deployment screenshots
+
+## Author
+
+Akanksha Chavda
+GitHub: AC0731
