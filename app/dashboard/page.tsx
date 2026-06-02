@@ -9,6 +9,10 @@ import {
 } from "@/lib/stripe";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import {
+  getBillingStatusLabel,
+  getSubscriptionHeadline,
+} from "@/lib/subscription";
 
 const FREE_NOTE_LIMIT = 3;
 
@@ -84,11 +88,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         }.`
     : `Free workspaces can save up to ${FREE_NOTE_LIMIT} notes. Upgrade to Pro for unlimited notes.`;
 
-  const billingStatus = isPro
-    ? isCanceling
-      ? "Cancels at period end"
-      : "Active"
-    : "Not subscribed";
+  const billingStatus = getBillingStatusLabel({
+    isPro,
+    isCanceling,
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
@@ -119,11 +122,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <div>
             <p className="text-sm font-medium text-blue-600">Subscription</p>
             <h2 className="mt-1 text-xl font-bold text-slate-950">
-              {isPro
-                ? isCanceling
-                  ? "Pro workspace canceling"
-                  : "Pro workspace active"
-                : "Free workspace"}
+              {getSubscriptionHeadline({ isPro, isCanceling })}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {subscriptionMessage}
