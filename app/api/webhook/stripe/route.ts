@@ -19,7 +19,9 @@ function getStripe() {
   return new Stripe(getRequiredEnv("STRIPE_SECRET_KEY"));
 }
 
-function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null) {
+function getCustomerId(
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
+) {
   if (!customer) {
     return null;
   }
@@ -64,6 +66,8 @@ async function updateUserSubscription({
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,
     stripeCurrentPeriodEnd: currentPeriodEnd,
+    stripeStatus: subscription.status,
+    stripeCancelAtPeriodEnd: subscription.cancel_at_period_end,
   };
 
   if (userId) {
@@ -78,6 +82,7 @@ async function updateUserSubscription({
       userId,
       updated: updatedUser.count,
       status: subscription.status,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
     });
 
     return;
@@ -101,6 +106,7 @@ async function updateUserSubscription({
     customerId: resolvedCustomerId,
     updated: updatedUser.count,
     status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 }
 
@@ -138,6 +144,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     customerId,
     subscriptionId: subscription.id,
     status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
   await updateUserSubscription({
@@ -169,6 +176,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       stripeSubscriptionId: null,
       stripePriceId: null,
       stripeCurrentPeriodEnd: null,
+      stripeStatus: "canceled",
+      stripeCancelAtPeriodEnd: false,
     },
   });
 

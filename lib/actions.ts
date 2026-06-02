@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "./auth";
 import { db } from "./db";
 
+const FREE_NOTE_LIMIT = 3;
+
 type ActionResult = {
   success: boolean;
   message: string;
@@ -15,15 +17,35 @@ function getStringFormValue(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-async function getUserEmail() {
+async function getCurrentUser() {
   const session = await getServerSession(authOptions);
-  return session?.user?.email?.trim() || null;
+  const email = session?.user?.email?.trim().toLowerCase();
+
+  if (!email) {
+    return null;
+  }
+
+  return db.user.findUnique({
+    where: {
+      email,
+    },
+    select: {
+      id: true,
+      email: true,
+      isPro: true,
+      _count: {
+        select: {
+          notes: true,
+        },
+      },
+    },
+  });
 }
 
 export async function createNote(formData: FormData): Promise<ActionResult> {
-  const email = await getUserEmail();
+  const user = await getCurrentUser();
 
-  if (!email) {
+  if (!user) {
     return {
       success: false,
       message: "You must be signed in to save notes.",
@@ -54,13 +76,22 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
     };
   }
 
+  if (!user.isPro && user._count.notes >= FREE_NOTE_LIMIT) {
+    return {
+      success: false,
+      message: `Free workspaces are limited to ${FREE_NOTE_LIMIT} notes. Upgrade to Pro for unlimited notes.`,
+    };
+  }
+
   try {
     await db.note.create({
       data: {
         title,
         content: content || null,
         user: {
-          connect: { email },
+          connect: {
+            id: user.id,
+          },
         },
       },
     });
@@ -82,9 +113,9 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
 }
 
 export async function deleteNote(formData: FormData): Promise<ActionResult> {
-  const email = await getUserEmail();
+  const user = await getCurrentUser();
 
-  if (!email) {
+  if (!user) {
     return {
       success: false,
       message: "You must be signed in to delete notes.",
@@ -104,9 +135,7 @@ export async function deleteNote(formData: FormData): Promise<ActionResult> {
     const result = await db.note.deleteMany({
       where: {
         id: noteId,
-        user: {
-          email,
-        },
+        userId: user.id,
       },
     });
 

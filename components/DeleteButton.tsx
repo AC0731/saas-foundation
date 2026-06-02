@@ -10,6 +10,14 @@ export default function DeleteButton({ noteId }: { noteId: string }) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const confirmed = window.confirm(
+      "Delete this note? This action cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {

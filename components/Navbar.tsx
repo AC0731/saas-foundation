@@ -1,19 +1,23 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
 export default function Navbar() {
   const { data: session } = useSession();
 
   return (
-    <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm">
+    <nav className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-4 shadow-sm">
       <div className="flex items-center gap-8">
-        <Link href="/" className="text-xl font-bold text-blue-600 tracking-tight">
+        <Link href="/" className="text-xl font-bold tracking-tight text-blue-600">
           SaaS Foundation
         </Link>
+
         {session && (
-          <Link href="/dashboard" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-slate-600 transition-colors hover:text-blue-600"
+          >
             Dashboard
           </Link>
         )}
@@ -22,23 +26,24 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         {session ? (
           <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500 hidden md:block">
+            <span className="hidden text-sm text-slate-500 md:block">
               {session.user?.email}
             </span>
+
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="text-sm font-semibold text-white bg-slate-900 px-4 py-2 rounded-lg hover:bg-slate-800 transition-all"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-slate-800"
             >
               Sign Out
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => signIn()}
-            className="text-sm font-semibold text-white bg-blue-600 px-5 py-2 rounded-lg hover:bg-blue-700 transition-all"
+          <Link
+            href="/auth/signin"
+            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-700"
           >
-            Sign In
-          </button>
+            Sign In / Create Account
+          </Link>
         )}
       </div>
     </nav>

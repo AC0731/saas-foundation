@@ -71,7 +71,7 @@ export async function createCheckoutSession() {
         quantity: 1,
       },
     ],
-    success_url: `${appUrl}/dashboard?success=true`,
+    success_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/dashboard?canceled=true`,
   });
 
@@ -80,4 +80,94 @@ export async function createCheckoutSession() {
   }
 
   redirect(checkout.url);
+}
+
+export async function syncStripeCheckoutSession(sessionId: string, email: string) {
+  const user = await db.user.findUnique({
+    where: {
+      email: email.trim().toLowerCase(),
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) {
+    return;
+  }
+
+  const checkoutSession = await getStripe().checkout.sessions.retrieve(sessionId);
+
+  const checkoutUserId =
+    checkoutSession.metadata?.userId || checkoutSession.client_reference_id;
+
+  if (checkoutUserId !== user.id) {
+    return;
+  }
+
+  const subscriptionId =
+    typeof checkoutSession.subscription === "string"
+      ? checkoutSession.subscription
+      : checkoutSession.subscription?.id;
+
+  if (!subscriptionId) {
+    return;
+  }
+
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
+  const subscriptionItem = subscription.items.data[0];
+  const currentPeriodEnd = subscriptionItem?.current_period_end
+    ? new Date(subscriptionItem.current_period_end * 1000)
+    : null;
+
+  const customerId =
+    typeof checkoutSession.customer === "string"
+      ? checkoutSession.customer
+      : checkoutSession.customer?.id || null;
+
+  await db.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      isPro: subscription.status === "active" || subscription.status === "trialing",
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscription.id,
+      stripePriceId: subscriptionItem?.price.id || null,
+      stripeCurrentPeriodEnd: currentPeriodEnd,
+      stripeStatus: subscription.status,
+      stripeCancelAtPeriodEnd: subscription.cancel_at_period_end,
+    },
+  });
+}
+
+export async function createCustomerPortalSession() {
+  const session = await getServerSession(authOptions);
+  const email = session?.user?.email?.trim().toLowerCase();
+
+  if (!email) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await db.user.findUnique({
+    where: {
+      email,
+    },
+    select: {
+      stripeCustomerId: true,
+    },
+  });
+
+  if (!user?.stripeCustomerId) {
+    throw new Error("Stripe customer was not found for this user.");
+  }
+
+  const appUrl = getAppUrl();
+
+  const portalSession = await getStripe().billingPortal.sessions.create({
+    customer: user.stripeCustomerId,
+    return_url: `${appUrl}/dashboard`,
+  });
+
+  redirect(portalSession.url);
 }

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
-import { Toaster } from "sonner"; // 1. Add this import
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,19 +17,25 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SaaS Foundation",
-  description: "Professional Note Workspace",
+  description:
+    "A full-stack SaaS foundation with authentication, billing, and protected workspaces.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
+      >
         <Providers>
-          <Toaster position="top-center" richColors /> {/* 2. Add Toaster here */}
+          <Toaster position="top-center" richColors />
           <Navbar />
-          <main className="min-h-screen bg-slate-50">
-            {children}
-          </main>
+          <main className="min-h-screen bg-slate-50">{children}</main>
         </Providers>
       </body>
     </html>

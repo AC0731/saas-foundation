@@ -13,12 +13,13 @@ model User {
   emailVerified           DateTime?
   image                   String?
   passwordHash            String?
-  stripeCustomerId        String?   @unique
-  stripeSubscriptionId    String?   @unique
-  stripePriceId           String?
-  stripeCurrentPeriodEnd  DateTime?
-  isPro                   Boolean   @default(false)
-
+  stripeCustomerId         String?   @unique
+  stripeSubscriptionId     String?   @unique
+  stripePriceId            String?
+  stripeCurrentPeriodEnd   DateTime?
+  stripeStatus             String?
+  stripeCancelAtPeriodEnd  Boolean   @default(false)
+  isPro                    Boolean   @default(false)
   accounts                Account[]
   sessions                Session[]
   notes                   Note[]
