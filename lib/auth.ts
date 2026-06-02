@@ -3,6 +3,11 @@ import bcrypt from "bcryptjs";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "./db";
+import {
+  buildRateLimitKey,
+  checkRateLimit,
+  RATE_LIMITS,
+} from "./rate-limit";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -43,6 +48,15 @@ export const authOptions: NextAuthOptions = {
         const mode = credentials?.mode === "signup" ? "signup" : "signin";
 
         if (!email || !password) {
+          return null;
+        }
+
+        const authRateLimit = await checkRateLimit(
+          buildRateLimitKey(`auth:${mode}`, email),
+          RATE_LIMITS.auth
+        );
+
+        if (!authRateLimit.allowed) {
           return null;
         }
 

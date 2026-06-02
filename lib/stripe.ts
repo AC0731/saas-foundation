@@ -2,6 +2,12 @@
 
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  buildRateLimitKey,
+  checkRateLimit,
+  formatRateLimitMessage,
+  RATE_LIMITS,
+} from "@/lib/rate-limit";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
@@ -48,6 +54,17 @@ export async function createCheckoutSession() {
 
   if (user.isPro) {
     redirect("/dashboard");
+  }
+
+  const rateLimit = await checkRateLimit(
+    buildRateLimitKey("stripe:checkout", user.id),
+    RATE_LIMITS.checkout
+  );
+
+  if (!rateLimit.allowed) {
+    throw new Error(
+      formatRateLimitMessage("checkout", rateLimit.retryAfterSeconds)
+    );
   }
 
   const appUrl = getAppUrl();
@@ -154,12 +171,24 @@ export async function createCustomerPortalSession() {
       email,
     },
     select: {
+      id: true,
       stripeCustomerId: true,
     },
   });
 
   if (!user?.stripeCustomerId) {
     throw new Error("Stripe customer was not found for this user.");
+  }
+
+  const rateLimit = await checkRateLimit(
+    buildRateLimitKey("stripe:portal", user.id),
+    RATE_LIMITS.billingPortal
+  );
+
+  if (!rateLimit.allowed) {
+    throw new Error(
+      formatRateLimitMessage("billing portal", rateLimit.retryAfterSeconds)
+    );
   }
 
   const appUrl = getAppUrl();
