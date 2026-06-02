@@ -13,6 +13,9 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  pages: {
+    signIn: "/auth/signin",
+  },
   providers: [
     CredentialsProvider({
       name: "Email and Password",
@@ -26,6 +29,10 @@ export const authOptions: NextAuthOptions = {
           label: "Password",
           type: "password",
         },
+        mode: {
+          label: "Mode",
+          type: "text",
+        },
       },
       async authorize(credentials) {
         const email = credentials?.email
@@ -33,6 +40,7 @@ export const authOptions: NextAuthOptions = {
           : "";
 
         const password = credentials?.password?.trim() || "";
+        const mode = credentials?.mode === "signup" ? "signup" : "signin";
 
         if (!email || !password) {
           return null;
@@ -43,6 +51,10 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          if (mode !== "signup") {
+            return null;
+          }
+
           const passwordHash = await bcrypt.hash(password, 12);
 
           user = await db.user.create({
@@ -52,21 +64,27 @@ export const authOptions: NextAuthOptions = {
               name: email.split("@")[0] || "SaaS User",
             },
           });
-        } else if (!user.passwordHash) {
-          const passwordHash = await bcrypt.hash(password, 12);
-
-          user = await db.user.update({
-            where: { id: user.id },
-            data: { passwordHash },
-          });
         } else {
-          const isPasswordValid = await bcrypt.compare(
-            password,
-            user.passwordHash
-          );
-
-          if (!isPasswordValid) {
+          if (mode === "signup") {
             return null;
+          }
+
+          if (!user.passwordHash) {
+            const passwordHash = await bcrypt.hash(password, 12);
+
+            user = await db.user.update({
+              where: { id: user.id },
+              data: { passwordHash },
+            });
+          } else {
+            const isPasswordValid = await bcrypt.compare(
+              password,
+              user.passwordHash
+            );
+
+            if (!isPasswordValid) {
+              return null;
+            }
           }
         }
 
