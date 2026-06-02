@@ -20,11 +20,11 @@ model User {
   stripeStatus             String?
   stripeCancelAtPeriodEnd  Boolean   @default(false)
   isPro                    Boolean   @default(false)
-  accounts                Account[]
-  sessions                Session[]
-  notes                   Note[]
+  accounts                 Account[]
+  sessions                 Session[]
+  notes                    Note[]
 
-  createdAt               DateTime  @default(now())
+  createdAt                DateTime  @default(now())
 }
 
 model Account {
@@ -70,4 +70,15 @@ model Note {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+model RateLimit {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  count     Int      @default(1)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }

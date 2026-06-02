@@ -4,6 +4,12 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "./auth";
 import { db } from "./db";
+import {
+  buildRateLimitKey,
+  checkRateLimit,
+  formatRateLimitMessage,
+  RATE_LIMITS,
+} from "./rate-limit";
 
 const FREE_NOTE_LIMIT = 3;
 
@@ -49,6 +55,21 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
     return {
       success: false,
       message: "You must be signed in to save notes.",
+    };
+  }
+
+  const rateLimit = await checkRateLimit(
+    buildRateLimitKey("note:create", user.id),
+    RATE_LIMITS.createNote
+  );
+
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      message: formatRateLimitMessage(
+        "note creation",
+        rateLimit.retryAfterSeconds
+      ),
     };
   }
 
@@ -119,6 +140,21 @@ export async function deleteNote(formData: FormData): Promise<ActionResult> {
     return {
       success: false,
       message: "You must be signed in to delete notes.",
+    };
+  }
+
+  const rateLimit = await checkRateLimit(
+    buildRateLimitKey("note:delete", user.id),
+    RATE_LIMITS.deleteNote
+  );
+
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      message: formatRateLimitMessage(
+        "note deletion",
+        rateLimit.retryAfterSeconds
+      ),
     };
   }
 
