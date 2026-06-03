@@ -223,3 +223,7 @@ Planned improvements:
 
 Akanksha Chavda
 GitHub: AC0731
+
+## Deployment Notes
+
+Deployment and production setup notes are available in `docs/DEPLOYMENT.md`.
