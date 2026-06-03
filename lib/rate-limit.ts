@@ -13,6 +13,7 @@ type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
+// Centralized limits keep abuse protection consistent across auth, notes, and billing flows.
 export const RATE_LIMITS = {
   auth: {
     maxRequests: 5,
@@ -36,6 +37,7 @@ export const RATE_LIMITS = {
   },
 } satisfies Record<string, RateLimitConfig>;
 
+// Keys are normalized so the same user/action cannot bypass limits with casing or whitespace changes.
 export function buildRateLimitKey(scope: string, identifier: string) {
   const cleanScope = scope.trim().toLowerCase();
   const cleanIdentifier = identifier.trim().toLowerCase();
@@ -52,6 +54,7 @@ export function formatRateLimitMessage(
   return `Too many ${action} attempts. Try again in ${retryAfterSeconds} ${unit}.`;
 }
 
+// Database-backed rate limiting keeps limits consistent across server restarts and deployments.
 export async function checkRateLimit(
   key: string,
   config: RateLimitConfig

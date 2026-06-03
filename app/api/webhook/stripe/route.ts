@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
+// Stripe webhook verification requires the Node.js runtime for signature validation.
 export const runtime = "nodejs";
-
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -48,6 +48,7 @@ function isActiveSubscription(subscription: Stripe.Subscription) {
   return subscription.status === "active" || subscription.status === "trialing";
 }
 
+// Webhooks are the source of truth for subscription status after Stripe processes billing events.
 async function updateUserSubscription({
   userId,
   customerId,
@@ -188,6 +189,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   });
 }
 
+// The raw request body must be verified with Stripe before trusting any webhook payload.
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("stripe-signature");

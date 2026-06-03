@@ -12,6 +12,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
 
+// Billing flows should fail fast when required Stripe configuration is missing.
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -30,6 +31,7 @@ function getAppUrl() {
   return process.env.NEXTAUTH_URL || "http://localhost:3000";
 }
 
+// Checkout sessions are created server-side so price IDs, customer IDs, and user ownership stay trusted.
 export async function createCheckoutSession() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email?.trim().toLowerCase();
@@ -99,6 +101,7 @@ export async function createCheckoutSession() {
   redirect(checkout.url);
 }
 
+// Redirect-based sync is a fallback for local development and delayed webhook delivery.
 export async function syncStripeCheckoutSession(sessionId: string, email: string) {
   const user = await db.user.findUnique({
     where: {
@@ -158,6 +161,7 @@ export async function syncStripeCheckoutSession(sessionId: string, email: string
   });
 }
 
+// The customer portal is scoped to the signed-in user's Stripe customer record.
 export async function createCustomerPortalSession() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email?.trim().toLowerCase();

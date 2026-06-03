@@ -23,6 +23,7 @@ function getStringFormValue(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+// Server actions always resolve the user from the session instead of trusting client-provided IDs.
 async function getCurrentUser() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email?.trim().toLowerCase();
@@ -133,6 +134,7 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
   }
 }
 
+// deleteMany enforces ownership by requiring both the note ID and the signed-in user's ID.
 export async function deleteNote(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
 
