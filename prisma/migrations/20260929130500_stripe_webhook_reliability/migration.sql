@@ -1,5 +1,6 @@
 -- Track Stripe webhook processing for idempotency and stale-event protection.
 ALTER TABLE "User"
+  ADD COLUMN "stripeSubscriptionCreated" INTEGER,
   ADD COLUMN "stripeLastEventCreated" INTEGER,
   ADD COLUMN "stripeLastEventId" TEXT;
 
