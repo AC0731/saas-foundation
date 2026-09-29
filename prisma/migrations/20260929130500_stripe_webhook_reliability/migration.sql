@@ -10,6 +10,7 @@ CREATE TABLE "StripeWebhookEvent" (
   "stripeCreated" INTEGER NOT NULL,
   "userId" TEXT,
   "subscriptionId" TEXT,
+  "outcome" TEXT NOT NULL DEFAULT 'processed',
   "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT "StripeWebhookEvent_pkey" PRIMARY KEY ("id")
