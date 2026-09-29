@@ -5,7 +5,7 @@
 
 ## Problem
 
-Stripe webhooks are delivered at least once and delivery order is not guaranteed. The earlier handler verified signatures, but it did not persist processed event IDs and it applied subscription events directly as they arrived.
+While reviewing the billing flow, I found that the earlier webhook handler verified signatures but did not persist processed event IDs and applied subscription events directly as they arrived. Stripe webhooks can be delivered more than once and delivery order is not guaranteed.
 
 That left two reliability gaps:
 
@@ -72,4 +72,4 @@ Applying reconciliation requires server-side database and Stripe credentials.
 
 Automated tests verify the ordering/entitlement/reconciliation policy. CI does not contain real Stripe credentials, so it does **not** claim to be an end-to-end Stripe test-mode delivery test. The webhook route still depends on Stripe's signed payload and API behavior in a configured environment.
 
-That limit is deliberate and documented instead of presenting mocked policy tests as a live payment integration test.
+That limit is documented so the automated policy tests are not confused with a live end-to-end payment integration test.
