@@ -2,16 +2,17 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import {
+  decideCredentialAction,
+  validateCredentialInput,
+  type CredentialMode,
+} from "./auth-policy";
 import { db } from "./db";
 import {
   buildRateLimitKey,
   checkRateLimit,
   RATE_LIMITS,
 } from "./rate-limit";
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -40,19 +41,20 @@ export const authOptions: NextAuthOptions = {
         },
       },
       async authorize(credentials) {
-        const email = credentials?.email
-          ? normalizeEmail(credentials.email)
-          : "";
+        const mode: CredentialMode =
+          credentials?.mode === "signup" ? "signup" : "signin";
+        const input = validateCredentialInput({
+          email: credentials?.email || "",
+          password: credentials?.password || "",
+          mode,
+        });
 
-        const password = credentials?.password?.trim() || "";
-        const mode = credentials?.mode === "signup" ? "signup" : "signin";
-
-        if (!email || !password) {
+        if (!input.valid) {
           return null;
         }
 
         const authRateLimit = await checkRateLimit(
-          buildRateLimitKey(`auth:${mode}`, email),
+          buildRateLimitKey(`auth:${mode}`, input.email),
           RATE_LIMITS.auth
         );
 
@@ -60,52 +62,54 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        let user = await db.user.findUnique({
-          where: { email },
+        const user = await db.user.findUnique({
+          where: { email: input.email },
         });
 
-        if (!user) {
-          if (mode !== "signup") {
-            return null;
-          }
+        const action = decideCredentialAction({
+          mode,
+          userExists: Boolean(user),
+          hasPasswordHash: Boolean(user?.passwordHash),
+        });
 
-          const passwordHash = await bcrypt.hash(password, 12);
+        if (action === "deny") {
+          return null;
+        }
 
-          user = await db.user.create({
+        if (action === "create") {
+          const passwordHash = await bcrypt.hash(input.password, 12);
+          const createdUser = await db.user.create({
             data: {
-              email,
+              email: input.email,
               passwordHash,
-              name: email.split("@")[0] || "SaaS User",
+              name: input.email.split("@")[0] || "SaaS User",
             },
           });
-        } else {
-          if (mode === "signup") {
-            return null;
-          }
 
-          if (!user.passwordHash) {
-            const passwordHash = await bcrypt.hash(password, 12);
+          return {
+            id: createdUser.id,
+            name: createdUser.name,
+            email: createdUser.email ?? input.email,
+          };
+        }
 
-            user = await db.user.update({
-              where: { id: user.id },
-              data: { passwordHash },
-            });
-          } else {
-            const isPasswordValid = await bcrypt.compare(
-              password,
-              user.passwordHash
-            );
+        if (!user?.passwordHash) {
+          return null;
+        }
 
-            if (!isPasswordValid) {
-              return null;
-            }
-          }
+        const isPasswordValid = await bcrypt.compare(
+          input.password,
+          user.passwordHash
+        );
+
+        if (!isPasswordValid) {
+          return null;
         }
 
         return {
           id: user.id,
           name: user.name,
-          email: user.email ?? email,
+          email: user.email ?? input.email,
         };
       },
     }),
