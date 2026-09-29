@@ -94,6 +94,7 @@ model StripeWebhookEvent {
   stripeCreated  Int
   userId         String?
   subscriptionId String?
+  outcome        String   @default("processed")
   processedAt    DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
