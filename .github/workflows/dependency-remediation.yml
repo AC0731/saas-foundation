@@ -17,8 +17,7 @@ jobs:
           cache: npm
       - name: Refresh dependency lock
         run: |
-          npm install --package-lock-only
-          npm audit fix --package-lock-only
+          npm install --package-lock-only --ignore-scripts
           npm audit --omit=dev --audit-level=high
       - name: Commit remediated dependency graph
         run: |
