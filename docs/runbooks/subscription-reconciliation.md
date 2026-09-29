@@ -40,7 +40,7 @@ A stale event should be recorded with a non-applied outcome. If the stored entit
 
 Capture:
 
-- user ID/email (sanitized if shared)
+- user ID/email (redacted if shared)
 - Stripe customer and subscription IDs
 - webhook event ID/type
 - event outcome

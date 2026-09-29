@@ -44,4 +44,4 @@ For auth/billing changes, validate at minimum:
 
 ## Incident priority
 
-Treat authentication bypass, cross-user data access, billing entitlement errors, or leaked secrets as security-impacting incidents. Keep evidence sanitized and do not paste credentials, webhook secrets, password hashes, or session tokens into tickets.
+Treat authentication bypass, cross-user data access, billing entitlement errors, or leaked secrets as security-impacting incidents. Redact sensitive identifiers when evidence is shared, and do not paste credentials, webhook secrets, password hashes, or session tokens into tickets.

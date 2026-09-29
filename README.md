@@ -46,13 +46,13 @@ Next.js App Router
 
 ## Authentication security incident
 
-During review, the credentials provider exposed an account-boundary problem.
+While working through the authentication flow, I found an account-boundary bug in the credentials provider.
 
 An existing user with `passwordHash = null` could enter credentials in sign-in mode and the application would create a new password hash from the submitted password.
 
 That is unsafe because the existence of an email record does not prove the caller is allowed to establish a new authentication factor.
 
-A regression test was committed first.
+I added a regression test for the bug before changing the credential policy.
 
 The fixed policy is explicit:
 
@@ -77,7 +77,7 @@ Incident: [`docs/incidents/INC-001-passwordless-account-claim.md`](docs/incident
 
 ## Billing reliability case study
 
-The Stripe integration now defines explicit behavior for duplicate delivery, out-of-order events, superseded subscriptions, interrupted processing, and state repair.
+While working on the Stripe billing path, I found that the webhook handler had no durable duplicate-event record and no clear rule for out-of-order subscription updates. I added explicit handling for duplicate delivery, stale events, superseded subscriptions, interrupted processing, and state repair.
 
 Key decisions:
 

@@ -11,16 +11,16 @@ The credentials provider allowed an existing user with `passwordHash = null` to 
 
 A passwordless/imported/provider-backed account could be converted into a credentials account without a dedicated verification flow. Authentication code should never infer account ownership from possession of an email address alone.
 
-## Reproduction
+## How I found it
 
-A regression test was committed first to require the following policy:
+While tracing the sign-in path, I found that an existing user without a password hash could fall through to code that created one from the submitted password. I added regression coverage for the expected policy:
 
 - sign-in + existing user + no password hash → **deny**
 - sign-in + existing credentials user → **verify existing password**
 - signup + unused email → **create**
 - signup + existing email → **deny**
 
-That regression commit failed before the policy module existed, preserving the finding in Git history.
+The regression failed against the existing implementation, which confirmed the bug before I changed the policy module.
 
 ## Fix
 
