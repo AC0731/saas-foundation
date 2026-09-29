@@ -15,15 +15,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
       - name: Refresh dependency lock
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm audit --omit=dev --audit-level=high
-      - name: Commit remediated dependency graph
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Commit refreshed dependency graph
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
-          git diff --cached --quiet && exit 0
-          git commit -m "security: refresh audited SaaS dependencies"
+          git diff --cached --quiet || git commit -m "security: refresh SaaS dependency lock"
           git push
+
+      - name: Inspect security-sensitive dependency paths
+        run: npm ls next next-auth preact hono mysql2 lodash valibot @prisma/config --all || true
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
