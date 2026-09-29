@@ -144,7 +144,8 @@ Healthy:
 {
   "status": "ready",
   "checks": {
-    "database": "ok"
+    "database": "ok",
+    "billingSchema": "ok"
   }
 }
 ```
@@ -270,6 +271,7 @@ Regression coverage includes:
 
 - [Security model](docs/SECURITY-MODEL.md)
 - [Authentication incident](docs/incidents/INC-001-passwordless-account-claim.md)
+- [Production schema recovery incident](docs/incidents/INC-003-production-schema-bridge.md)
 - [Dependency risk register](docs/DEPENDENCY-RISK.md)
 - [Operations guide](docs/OPERATIONS.md)
 - [Authentication and billing runbook](docs/runbooks/billing-and-auth-incidents.md)
