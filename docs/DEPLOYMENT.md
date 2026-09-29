@@ -39,6 +39,20 @@ This project uses Prisma with PostgreSQL. Development historically used `prisma 
 
 Do **not** run migrations automatically from every preview build.
 
+### One-time legacy production bridge
+
+The currently deployed database predates the migration workflow and was created with `prisma db push`. For the billing-reliability release, the repository temporarily runs:
+
+```bash
+npx prisma db push --skip-generate
+```
+
+**only when both** `VERCEL=1` and `VERCEL_ENV=production`.
+
+The bridge deliberately does **not** use `--accept-data-loss`. If Prisma detects a destructive change, the build fails and Vercel keeps the previous production deployment active. Preview deployments and GitHub CI skip the bridge.
+
+After `/api/health` reports `billingSchema: ok`, the one-time build hook is removed in a follow-up PR.
+
 ### Existing legacy database
 
 Before the first migration-based production release:
