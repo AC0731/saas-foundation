@@ -30,6 +30,28 @@ export function shouldClearSubscription({
   );
 }
 
+export function shouldReplaceSubscription({
+  currentSubscriptionId,
+  currentSubscriptionCreated,
+  incomingSubscriptionId,
+  incomingSubscriptionCreated,
+}: {
+  currentSubscriptionId: string | null;
+  currentSubscriptionCreated: number | null;
+  incomingSubscriptionId: string;
+  incomingSubscriptionCreated: number;
+}) {
+  if (!currentSubscriptionId || currentSubscriptionId === incomingSubscriptionId) {
+    return true;
+  }
+
+  if (currentSubscriptionCreated === null) {
+    return true;
+  }
+
+  return incomingSubscriptionCreated >= currentSubscriptionCreated;
+}
+
 export function isEntitledSubscriptionStatus(status: string | null) {
   return status === "active" || status === "trialing";
 }
