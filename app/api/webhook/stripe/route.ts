@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import Stripe from "stripe";
 
 // Stripe webhook verification requires the Node.js runtime for signature validation.
@@ -191,11 +192,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
 // The raw request body must be verified with Stripe before trusting any webhook payload.
 export async function POST(req: Request) {
+  const requestId = randomUUID();
   const body = await req.text();
   const signature = (await headers()).get("stripe-signature");
 
   if (!signature) {
-    return new NextResponse("Missing stripe-signature header.", { status: 400 });
+    console.warn("Stripe webhook rejected: missing signature", { requestId });
+    return new NextResponse("Invalid webhook request.", {
+      status: 400,
+      headers: { "X-Request-ID": requestId },
+    });
   }
 
   let event: Stripe.Event;
@@ -210,12 +216,19 @@ export async function POST(req: Request) {
     const message =
       error instanceof Error ? error.message : "Unknown webhook signature error.";
 
-    console.error("Stripe webhook signature failed:", message);
+    console.error("Stripe webhook signature failed:", { requestId, message });
 
-    return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
+    return new NextResponse("Invalid webhook signature.", {
+      status: 400,
+      headers: { "X-Request-ID": requestId },
+    });
   }
 
-  console.log("Stripe webhook event received:", event.type);
+  console.log("Stripe webhook event received:", {
+    requestId,
+    eventId: event.id,
+    eventType: event.type,
+  });
 
   switch (event.type) {
     case "checkout.session.completed":
@@ -235,5 +248,8 @@ export async function POST(req: Request) {
       break;
   }
 
-  return new NextResponse(null, { status: 200 });
+  return new NextResponse(null, {
+    status: 200,
+    headers: { "X-Request-ID": requestId },
+  });
 }
