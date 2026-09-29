@@ -29,15 +29,15 @@ export default function SignInPage() {
     setError("");
 
     const normalizedEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
+    const cleanPassword = password;
 
     if (!normalizedEmail || !cleanPassword) {
       setError("Please enter both an email and password.");
       return;
     }
 
-    if (isSignUp && cleanPassword.length < 8) {
-      setError("Use at least 8 characters for your password.");
+    if (isSignUp && cleanPassword.length < 12) {
+      setError("Use at least 12 characters for your password.");
       return;
     }
 
@@ -166,7 +166,7 @@ export default function SignInPage() {
               />
               {isSignUp ? (
                 <span className="text-xs text-slate-500">
-                  Use at least 8 characters. For a real production app, password reset and email verification would also be added.
+                  Use at least 12 characters. Password content is preserved exactly and hashed server-side.
                 </span>
               ) : null}
             </label>
