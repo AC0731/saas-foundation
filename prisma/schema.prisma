@@ -15,6 +15,7 @@ model User {
   passwordHash            String?
   stripeCustomerId         String?   @unique
   stripeSubscriptionId     String?   @unique
+  stripeSubscriptionCreated Int?
   stripePriceId            String?
   stripeCurrentPeriodEnd   DateTime?
   stripeStatus             String?
