@@ -1,23 +1,27 @@
 import type { NextConfig } from "next";
 
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+];
+
 const nextConfig: NextConfig = {
   serverExternalPackages: [
-    // Prisma client (Next already auto-externalizes this in many cases)
     "@prisma/client",
-
-    // ALSO externalize your adapter + DB driver (pick the ones you use)
-    // Postgres:
     "@prisma/adapter-pg",
     "pg",
-
-    // MySQL/MariaDB (use these instead of pg ones):
-    // "@prisma/adapter-mariadb",
-    // "mariadb",
-
-    // SQLite (use these instead of pg ones):
-    // "@prisma/adapter-better-sqlite3",
-    // "better-sqlite3",
   ],
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
