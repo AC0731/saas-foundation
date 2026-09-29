@@ -41,15 +41,19 @@ Do **not** run migrations automatically from every preview build.
 
 ### One-time legacy production bridge
 
-The currently deployed database predates the migration workflow and was created with `prisma db push`. For the billing-reliability release, the repository temporarily runs:
+The currently deployed database predates the migration workflow and was created with `prisma db push`.
 
-```bash
-npx prisma db push --skip-generate
-```
+For this billing-reliability release, the repository temporarily runs a production-only bridge implemented in `scripts/bridge-production-schema.mjs`. It executes explicit additive PostgreSQL DDL in one transaction:
 
-**only when both** `VERCEL=1` and `VERCEL_ENV=production`.
+- adds the three Stripe event-ordering columns to `User` if missing;
+- creates `StripeWebhookEvent` if missing;
+- creates its unique/index keys if missing;
+- adds the user foreign key if missing;
+- verifies the new columns/table can be queried before commit.
 
-The bridge deliberately does **not** use `--accept-data-loss`. If Prisma detects a destructive change, the build fails and Vercel keeps the previous production deployment active. Preview deployments and GitHub CI skip the bridge.
+The bridge contains no DROP statements and does not remove or rewrite existing application data. It runs **only when both** `VERCEL=1` and `VERCEL_ENV=production`; preview deployments and GitHub CI skip it.
+
+If any DDL or verification step fails, the transaction rolls back, the build exits non-zero, and Vercel keeps the previous production deployment active.
 
 After `/api/health` reports `billingSchema: ok`, the one-time build hook is removed in a follow-up PR.
 
