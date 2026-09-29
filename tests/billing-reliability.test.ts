@@ -4,6 +4,7 @@ import {
   isEntitledSubscriptionStatus,
   shouldApplyStripeEvent,
   shouldClearSubscription,
+  shouldReplaceSubscription,
 } from "../lib/billing-policy";
 
 describe("billing reliability policy", () => {
@@ -37,6 +38,26 @@ describe("billing reliability policy", () => {
       shouldClearSubscription({
         currentSubscriptionId: "sub_old",
         deletedSubscriptionId: "sub_old",
+      })
+    ).toBe(true);
+  });
+
+  it("does not let a superseded subscription replace a newer subscription", () => {
+    expect(
+      shouldReplaceSubscription({
+        currentSubscriptionId: "sub_new",
+        currentSubscriptionCreated: 2_000,
+        incomingSubscriptionId: "sub_old",
+        incomingSubscriptionCreated: 1_000,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldReplaceSubscription({
+        currentSubscriptionId: "sub_old",
+        currentSubscriptionCreated: 1_000,
+        incomingSubscriptionId: "sub_new",
+        incomingSubscriptionCreated: 2_000,
       })
     ).toBe(true);
   });
