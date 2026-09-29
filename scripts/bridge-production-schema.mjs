@@ -96,8 +96,19 @@ try {
     $$;
   `);
 
+  await client.query(`
+    SELECT
+      "stripeSubscriptionCreated",
+      "stripeLastEventCreated",
+      "stripeLastEventId"
+    FROM "User"
+    LIMIT 1;
+  `);
+
+  await client.query(`SELECT COUNT(*) FROM "StripeWebhookEvent";`);
+
   await client.query("COMMIT");
-  console.log("Additive billing schema bridge completed successfully.");
+  console.log("Additive billing schema bridge completed and verified successfully.");
 } catch (error) {
   try {
     await client.query("ROLLBACK");
