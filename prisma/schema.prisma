@@ -19,10 +19,13 @@ model User {
   stripeCurrentPeriodEnd   DateTime?
   stripeStatus             String?
   stripeCancelAtPeriodEnd  Boolean   @default(false)
+  stripeLastEventCreated    Int?
+  stripeLastEventId         String?
   isPro                    Boolean   @default(false)
   accounts                 Account[]
   sessions                 Session[]
   notes                    Note[]
+  stripeWebhookEvents       StripeWebhookEvent[]
 
   createdAt                DateTime  @default(now())
 }
@@ -81,4 +84,20 @@ model RateLimit {
   updatedAt DateTime @updatedAt
 
   @@index([resetAt])
+}
+
+
+model StripeWebhookEvent {
+  id             String   @id @default(cuid())
+  eventId        String   @unique
+  eventType      String
+  stripeCreated  Int
+  userId         String?
+  subscriptionId String?
+  processedAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, stripeCreated])
+  @@index([subscriptionId])
 }
