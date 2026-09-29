@@ -1,11 +1,14 @@
-import { db } from "@/lib/db";
+import {
+  hasProcessedStripeEvent,
+  processStripeEvent,
+} from "@/lib/stripe-webhook";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import Stripe from "stripe";
 
-// Stripe webhook verification requires the Node.js runtime for signature validation.
 export const runtime = "nodejs";
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -20,16 +23,6 @@ function getStripe() {
   return new Stripe(getRequiredEnv("STRIPE_SECRET_KEY"));
 }
 
-function getCustomerId(
-  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
-) {
-  if (!customer) {
-    return null;
-  }
-
-  return typeof customer === "string" ? customer : customer.id;
-}
-
 function getSubscriptionId(subscription: string | Stripe.Subscription | null) {
   if (!subscription) {
     return null;
@@ -38,159 +31,29 @@ function getSubscriptionId(subscription: string | Stripe.Subscription | null) {
   return typeof subscription === "string" ? subscription : subscription.id;
 }
 
-function getCurrentPeriodEnd(subscription: Stripe.Subscription) {
-  const subscriptionItem = subscription.items.data[0];
-  const currentPeriodEnd = subscriptionItem?.current_period_end;
+async function getCanonicalSubscription(event: Stripe.Event) {
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const subscriptionId = getSubscriptionId(session.subscription);
 
-  return currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null;
-}
-
-function isActiveSubscription(subscription: Stripe.Subscription) {
-  return subscription.status === "active" || subscription.status === "trialing";
-}
-
-// Webhooks are the source of truth for subscription status after Stripe processes billing events.
-async function updateUserSubscription({
-  userId,
-  customerId,
-  subscription,
-}: {
-  userId?: string | null;
-  customerId?: string | null;
-  subscription: Stripe.Subscription;
-}) {
-  const priceId = subscription.items.data[0]?.price.id || null;
-  const currentPeriodEnd = getCurrentPeriodEnd(subscription);
-
-  const data = {
-    isPro: isActiveSubscription(subscription),
-    stripeCustomerId: customerId || getCustomerId(subscription.customer),
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: priceId,
-    stripeCurrentPeriodEnd: currentPeriodEnd,
-    stripeStatus: subscription.status,
-    stripeCancelAtPeriodEnd: subscription.cancel_at_period_end,
-  };
-
-  if (userId) {
-    const updatedUser = await db.user.updateMany({
-      where: {
-        id: userId,
-      },
-      data,
-    });
-
-    console.log("Stripe subscription updated by userId:", {
-      userId,
-      updated: updatedUser.count,
-      status: subscription.status,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    });
-
-    return;
-  }
-
-  const resolvedCustomerId = data.stripeCustomerId;
-
-  if (!resolvedCustomerId) {
-    console.log("Stripe subscription skipped: missing customerId and userId.");
-    return;
-  }
-
-  const updatedUser = await db.user.updateMany({
-    where: {
-      stripeCustomerId: resolvedCustomerId,
-    },
-    data,
-  });
-
-  console.log("Stripe subscription updated by customerId:", {
-    customerId: resolvedCustomerId,
-    updated: updatedUser.count,
-    status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-  });
-}
-
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const userId = session.metadata?.userId || session.client_reference_id;
-  const customerId = getCustomerId(session.customer);
-  const subscriptionId = getSubscriptionId(session.subscription);
-
-  console.log("Stripe checkout completed:", {
-    userId,
-    customerId,
-    subscriptionId,
-  });
-
-  if (!subscriptionId) {
-    console.log("Stripe checkout skipped: missing subscriptionId.");
-    return;
-  }
-
-  const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-
-  await updateUserSubscription({
-    userId,
-    customerId,
-    subscription,
-  });
-}
-
-async function handleSubscriptionChange(subscription: Stripe.Subscription) {
-  const customerId = getCustomerId(subscription.customer);
-  const userId = subscription.metadata?.userId || null;
-
-  console.log("Stripe subscription changed:", {
-    userId,
-    customerId,
-    subscriptionId: subscription.id,
-    status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-  });
-
-  await updateUserSubscription({
-    userId,
-    customerId,
-    subscription,
-  });
-}
-
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const customerId = getCustomerId(subscription.customer);
-  const userId = subscription.metadata?.userId || null;
-
-  const where = userId
-    ? { id: userId }
-    : customerId
-      ? { stripeCustomerId: customerId }
+    return subscriptionId
+      ? getStripe().subscriptions.retrieve(subscriptionId)
       : null;
-
-  if (!where) {
-    console.log("Stripe subscription deletion skipped: missing userId and customerId.");
-    return;
   }
 
-  const updatedUser = await db.user.updateMany({
-    where,
-    data: {
-      isPro: false,
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      stripeCurrentPeriodEnd: null,
-      stripeStatus: "canceled",
-      stripeCancelAtPeriodEnd: false,
-    },
-  });
+  if (
+    event.type === "customer.subscription.created" ||
+    event.type === "customer.subscription.updated"
+  ) {
+    const subscription = event.data.object as Stripe.Subscription;
 
-  console.log("Stripe subscription deleted:", {
-    userId,
-    customerId,
-    updated: updatedUser.count,
-  });
+    // Re-read current Stripe state instead of trusting delivery order alone.
+    return getStripe().subscriptions.retrieve(subscription.id);
+  }
+
+  return null;
 }
 
-// The raw request body must be verified with Stripe before trusting any webhook payload.
 export async function POST(req: Request) {
   const requestId = randomUUID();
   const body = await req.text();
@@ -224,32 +87,50 @@ export async function POST(req: Request) {
     });
   }
 
-  console.log("Stripe webhook event received:", {
-    requestId,
-    eventId: event.id,
-    eventType: event.type,
-  });
+  if (await hasProcessedStripeEvent(event.id)) {
+    console.log("Stripe webhook duplicate ignored:", {
+      requestId,
+      eventId: event.id,
+      eventType: event.type,
+    });
 
-  switch (event.type) {
-    case "checkout.session.completed":
-      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-      break;
-
-    case "customer.subscription.created":
-    case "customer.subscription.updated":
-      await handleSubscriptionChange(event.data.object as Stripe.Subscription);
-      break;
-
-    case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-      break;
-
-    default:
-      break;
+    return new NextResponse(null, {
+      status: 200,
+      headers: { "X-Request-ID": requestId },
+    });
   }
 
-  return new NextResponse(null, {
-    status: 200,
-    headers: { "X-Request-ID": requestId },
-  });
+  try {
+    const canonicalSubscription = await getCanonicalSubscription(event);
+    const result = await processStripeEvent(event, {
+      canonicalSubscription,
+    });
+
+    console.log("Stripe webhook processed:", {
+      requestId,
+      eventId: event.id,
+      eventType: event.type,
+      outcome: result.outcome,
+      userId: result.userId,
+      subscriptionId: result.subscriptionId,
+    });
+
+    return new NextResponse(null, {
+      status: 200,
+      headers: { "X-Request-ID": requestId },
+    });
+  } catch (error) {
+    console.error("Stripe webhook processing failed:", {
+      requestId,
+      eventId: event.id,
+      eventType: event.type,
+      error,
+    });
+
+    // A non-2xx response allows Stripe to retry transient processing failures.
+    return new NextResponse("Webhook processing failed.", {
+      status: 500,
+      headers: { "X-Request-ID": requestId },
+    });
+  }
 }

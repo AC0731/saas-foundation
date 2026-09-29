@@ -75,6 +75,32 @@ The fix also:
 
 Incident: [`docs/incidents/INC-001-passwordless-account-claim.md`](docs/incidents/INC-001-passwordless-account-claim.md)
 
+## Billing reliability case study
+
+The Stripe integration now defines explicit behavior for duplicate delivery, out-of-order events, superseded subscriptions, interrupted processing, and state repair.
+
+Key decisions:
+
+- persist Stripe event IDs with a database unique constraint
+- commit the event record and entitlement update in one transaction
+- reject stale events using the last applied Stripe event timestamp
+- track subscription creation time so an old subscription cannot replace a newer one
+- ignore deletion of a superseded subscription
+- re-read current Stripe Subscription state for create/update events
+- return non-2xx on processing failure so Stripe can retry
+- provide a dry-run reconciliation command before any repair is applied
+
+```bash
+npm run billing:reconcile -- --email user@example.com
+npm run billing:reconcile -- --email user@example.com --apply
+```
+
+Detailed incident note: [`docs/incidents/INC-002-stripe-webhook-reliability.md`](docs/incidents/INC-002-stripe-webhook-reliability.md)
+
+Recovery runbook: [`docs/runbooks/subscription-reconciliation.md`](docs/runbooks/subscription-reconciliation.md)
+
+**Verification limit:** automated tests verify ordering, entitlement and reconciliation policy. CI does not contain real Stripe credentials, so these tests are not presented as end-to-end Stripe test-mode webhook delivery.
+
 ## Billing security
 
 Stripe handling includes:
