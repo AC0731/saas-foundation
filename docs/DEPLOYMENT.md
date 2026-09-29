@@ -39,23 +39,29 @@ This project uses Prisma with PostgreSQL. Development historically used `prisma 
 
 Do **not** run migrations automatically from every preview build.
 
-### One-time legacy production bridge
+### Completed legacy production bridge
 
-The currently deployed database predates the migration workflow and was created with `prisma db push`.
+The billing reliability schema bridge was completed on September 29, 2026.
 
-For this billing-reliability release, the repository temporarily runs a production-only bridge implemented in `scripts/bridge-production-schema.mjs`. It executes explicit additive PostgreSQL DDL in one transaction:
+Release sequence:
 
-- adds the three Stripe event-ordering columns to `User` if missing;
-- creates `StripeWebhookEvent` if missing;
-- creates its unique/index keys if missing;
-- adds the user foreign key if missing;
-- verifies the new columns/table can be queried before commit.
+1. The first production-only bridge used a broad Prisma schema sync. The Vercel production build exited non-zero, and the previous production deployment remained active.
+2. The approach was narrowed to explicit additive PostgreSQL DDL for only the required billing columns/table/indexes.
+3. The replacement ran in one transaction and verified the new objects before commit.
+4. The replacement Vercel deployment reached `READY`.
+5. The live readiness endpoint changed from:
 
-The bridge contains no DROP statements and does not remove or rewrite existing application data. It runs **only when both** `VERCEL=1` and `VERCEL_ENV=production`; preview deployments and GitHub CI skip it.
+       {"status":"unavailable","checks":{"database":"ok","billingSchema":"failed"}}
 
-If any DDL or verification step fails, the transaction rolls back, the build exits non-zero, and Vercel keeps the previous production deployment active.
+   to:
 
-After `/api/health` reports `billingSchema: ok`, the one-time build hook is removed in a follow-up PR.
+       {"status":"ready","checks":{"database":"ok","billingSchema":"ok"}}
+
+6. The temporary build hook was then removed so normal application builds no longer mutate the production schema.
+
+The guarded bridge script is retained as incident evidence, but it is no longer invoked by `npm run build`.
+
+See `docs/incidents/INC-003-production-schema-bridge.md`.
 
 ### Existing legacy database
 
