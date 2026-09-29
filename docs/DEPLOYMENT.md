@@ -33,24 +33,52 @@ Do not commit real secrets to GitHub.
 5. Deploy from the master branch.
 6. Confirm the landing page, auth page, dashboard, and Stripe webhook route build successfully.
 
-## Database Setup
+## Database Release Procedure
 
-This project uses Prisma with PostgreSQL.
+This project uses Prisma with PostgreSQL. Development historically used `prisma db push`, while new schema changes are versioned in `prisma/migrations`.
 
-Recommended production workflow:
+Do **not** run migrations automatically from every preview build.
 
-1. Create a managed PostgreSQL database.
-2. Add the production DATABASE_URL to the hosting environment.
-3. Run Prisma validation locally before deployment.
-4. Run Prisma schema sync or migrations carefully.
+### Existing legacy database
 
-For this portfolio project, `npx prisma db push` has been used during development. For a long-term production application, Prisma migrations should be used instead.
+Before the first migration-based production release:
 
-Useful commands:
+1. Take a database snapshot/backup.
+2. Run `npx prisma migrate status`.
+3. Compare the live schema with the repository schema before baselining:
+
+       npx prisma migrate diff \
+         --from-url "$DATABASE_URL" \
+         --to-schema prisma/schema.prisma \
+         --script
+
+4. If the live database already contains the structures represented by the historical migrations, mark only those historical migrations as applied with `prisma migrate resolve --applied <migration-name>`.
+5. Run `npx prisma migrate deploy` to apply migrations that are genuinely missing.
+6. Verify `/api/health` reports both `database: ok` and `billingSchema: ok`.
+7. Then verify sign-in and billing flows.
+
+The current billing reliability migration is:
+
+    20260929130500_stripe_webhook_reliability
+
+Do not mark that migration as applied unless its columns/table already exist.
+
+### New environments
+
+For a fresh database:
+
+    npx prisma migrate deploy
+    npx prisma generate
+
+### Why deployment does not auto-migrate
+
+A preview deployment should not be allowed to mutate a shared production database. Schema changes are therefore treated as an explicit release step, separate from application build/deploy.
+
+Useful validation commands:
 
     npx prisma validate
-    npx prisma generate
-    npx prisma db push
+    npx prisma migrate status
+    npx prisma migrate deploy
 
 ## Stripe Test Mode Setup
 
@@ -107,6 +135,7 @@ After deployment, confirm:
 - Pro status displays correctly
 - Stripe Customer Portal opens for Pro users
 - Cancellation status updates correctly
+- `/api/health` reports database and billing schema ready
 - CI passes on pull requests
 
 ## Security Notes
@@ -129,4 +158,3 @@ Recommended future improvements:
 - Audit logging
 - More server action tests
 - Role-based access controls
-- Production migration workflow
