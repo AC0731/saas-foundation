@@ -60,12 +60,8 @@ jobs:
     env:
       VERCEL: "1"
       VERCEL_ENV: preview
+      VERCEL_URL: preview-ci.example.vercel.app
       DATABASE_URL: ""
-      NEXTAUTH_URL: ""
-      NEXTAUTH_SECRET: ""
-      STRIPE_SECRET_KEY: ""
-      STRIPE_WEBHOOK_SECRET: ""
-      STRIPE_PRICE_ID: ""
 
     steps:
       - name: Checkout repository
