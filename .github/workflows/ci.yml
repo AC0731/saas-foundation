@@ -51,3 +51,43 @@ jobs:
 
       - name: Build project
         run: npm run build
+
+
+  preview-build:
+    name: Vercel preview build without secrets
+    runs-on: ubuntu-latest
+
+    env:
+      VERCEL: "1"
+      VERCEL_ENV: preview
+      DATABASE_URL: ""
+      NEXTAUTH_URL: ""
+      NEXTAUTH_SECRET: ""
+      STRIPE_SECRET_KEY: ""
+      STRIPE_WEBHOOK_SECRET: ""
+      STRIPE_PRICE_ID: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client without preview secrets
+        run: npx prisma generate
+
+      - name: Validate Prisma schema without preview secrets
+        run: npx prisma validate
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Vercel Preview shape
+        run: npm run build

@@ -1,9 +1,28 @@
 import { db } from "@/lib/db";
+import { isPreviewWithoutDatabase } from "@/lib/database-url";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  if (isPreviewWithoutDatabase()) {
+    return NextResponse.json(
+      {
+        status: "preview",
+        checks: {
+          database: "not-configured",
+          billingSchema: "not-checked",
+        },
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
+
   try {
     await db.$queryRaw`SELECT 1`;
   } catch (error) {
